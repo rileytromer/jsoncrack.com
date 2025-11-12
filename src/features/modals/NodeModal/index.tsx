@@ -5,6 +5,7 @@ import { CodeHighlight } from "@mantine/code-highlight";
 import type { NodeData } from "../../../types/graph";
 import useGraph from "../../editor/views/GraphView/stores/useGraph";
 import useJson from "../../../store/useJson";
+import useFile from "../../../store/useFile";
 
 // return object from json removing array and object fields
 const normalizeNodeData = (nodeRows: NodeData["text"]) => {
@@ -31,6 +32,7 @@ export const NodeModal = ({ opened, onClose }: ModalProps) => {
   const nodeData = useGraph(state => state.selectedNode);
   const getJson = useJson(state => state.getJson);
   const setJson = useJson(state => state.setJson);
+  const setContents = useFile(state => state.setContents);
 
   const [editing, setEditing] = React.useState(false);
   const [editText, setEditText] = React.useState("");
@@ -71,7 +73,11 @@ export const NodeModal = ({ opened, onClose }: ModalProps) => {
       const current = JSON.parse(getJson());
       const parsed = JSON.parse(editText);
       const newRoot = setValueAtPath(current, nodeData?.path, parsed);
-      setJson(JSON.stringify(newRoot, null, 2));
+      const newStr = JSON.stringify(newRoot, null, 2);
+      // Update left editor contents so visual editor shows the change
+      setContents({ contents: newStr, hasChanges: false });
+      // Also set json store immediately to refresh graph
+      setJson(newStr);
       setEditing(false);
       onClose?.();
     } catch (e) {
@@ -95,7 +101,7 @@ export const NodeModal = ({ opened, onClose }: ModalProps) => {
             <Text fz="xs" fw={500}>
               Content
             </Text>
-            <Group spacing="xs">
+            <Flex gap="xs">
               {!editing && (
                 <Button size="xs" variant="outline" onClick={() => setEditing(true)}>
                   Edit
@@ -112,7 +118,7 @@ export const NodeModal = ({ opened, onClose }: ModalProps) => {
                 </>
               )}
               <CloseButton onClick={onClose} />
-            </Group>
+            </Flex>
           </Flex>
           <ScrollArea.Autosize mah={250} maw={600}>
             {!editing ? (
